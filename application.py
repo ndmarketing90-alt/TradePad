@@ -18,6 +18,7 @@ else:
     st.sidebar.success(f"Logged in as: {username}")
     
     # --- CONNECT TO DATABASE ---
+    # --- CONNECT TO DATABASE ---
     try:
         creds = {
             "type": st.secrets["textkey"]["type"],
@@ -33,9 +34,12 @@ else:
             "universe_domain": st.secrets["textkey"]["universe_domain"]
         }
         db = firestore.Client.from_service_account_info(creds)
+        error_message = None
     except Exception as e:
         db = None
+        error_message = str(e)
 
+    if db is not None:
     if db is not None:
         user_ref = db.collection("traders").document(username)
         user_doc = user_ref.get()
@@ -96,4 +100,8 @@ else:
         else:
             st.info("No trades found in the cloud database for this username yet. Log your first setup above!")
     else:
-        st.error("Database connection missing. Please ensure your Streamlit Secrets are set up correctly.")
+        st.error("Database connection missing.")
+        if error_message:
+            st.warning(f"Technical Error Details: {error_message}")
+        else:
+            st.info("The database client initialized as None without throwing a direct parsing exception.")
