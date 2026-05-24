@@ -20,9 +20,9 @@ else:
     # --- CONNECT TO DATABASE ---
     # Connect directly to Firestore using standard cloud credentials
     try:
-        db = firestore.Client.from_service_account_info(st.secrets["textkey"])
-    except Exception:
-        # Fallback if secrets aren't fully loaded yet
+        credentials_dict = dict(st.secrets["textkey"])
+        db = firestore.Client.from_service_account_info(credentials_dict)
+    except Exception as e:
         db = None
 
     if db is not None:
@@ -97,4 +97,4 @@ else:
         else:
             st.info("No trades found in the cloud database for this username yet. Log your first setup above!")
     else:
-        st.error("Database connection missing. Please ensure your Streamlit Secrets are set up.")
+        st.error("Database connection missing. Please ensure your Streamlit Secrets are set up correctly.")
