@@ -19,27 +19,32 @@ else:
     
     # --- CONNECT TO DATABASE ---
     try:
-        raw_key = st.secrets["private_key"]
+        raw_key = st.secrets["textkey"]["private_key"]
         
-        # This converts the text shortcuts into real cloud line breaks
+        # This converts the text shortcuts into real cloud line breaks securely
         if "\\n" in raw_key:
             formatted_key = raw_key.replace("\\n", "\n")
         else:
             formatted_key = raw_key.replace(r"\n", "\n")
 
         creds = {
-            "type": st.secrets["type"],
-            "project_id": st.secrets["project_id"],
-            "private_key_id": st.secrets["private_key_id"],
+            "type": st.secrets["textkey"]["type"],
+            "project_id": st.secrets["textkey"]["project_id"],
+            "private_key_id": st.secrets["textkey"]["private_key_id"],
             "private_key": formatted_key,
-            "client_email": st.secrets["client_email"],
-            "client_id": st.secrets["client_id"],
-            "auth_uri": st.secrets["auth_uri"],
-            "token_uri": st.secrets["token_uri"],
-            "auth_provider_x509_cert_url": st.secrets["auth_provider_x509_cert_url"],
-            "client_x509_cert_url": st.secrets["client_x509_cert_url"],
-            "universe_domain": st.secrets["universe_domain"]
+            "client_email": st.secrets["textkey"]["client_email"],
+            "client_id": st.secrets["textkey"]["client_id"],
+            "auth_uri": st.secrets["textkey"]["auth_uri"],
+            "token_uri": st.secrets["textkey"]["token_uri"],
+            "auth_provider_x509_cert_url": st.secrets["textkey"]["auth_provider_x509_cert_url"],
+            "client_x509_cert_url": st.secrets["textkey"]["client_x509_cert_url"],
+            "universe_domain": st.secrets["textkey"]["universe_domain"]
         }
+        db = firestore.Client.from_service_account_info(creds)
+        error_message = None
+    except Exception as e:
+        db = None
+        error_message = str(e)
         db = firestore.Client.from_service_account_info(creds)
         error_message = None
     except Exception as e:
