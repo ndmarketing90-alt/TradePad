@@ -37,17 +37,13 @@ else:
         db = None
 
     if db is not None:
-        # Define where this user's trades are stored in the cloud
         user_ref = db.collection("traders").document(username)
-
-        # Fetch existing trades for this user from the cloud database
         user_doc = user_ref.get()
         if user_doc.exists:
             trades_list = user_doc.to_dict().get("trades", [])
         else:
             trades_list = []
 
-        # --- NEW TRADE INPUT FORM ---
         st.subheader("📝 Log a New Setup")
         
         with st.form("trade_form", clear_on_submit=True):
@@ -64,7 +60,6 @@ else:
                 
             submit = st.form_submit_button("Save Trade to Cloud")
 
-        # --- SAVE TO CLOUD ACTION ---
         if submit:
             new_trade = {
                 "Asset": asset,
@@ -74,20 +69,14 @@ else:
                 "Session": session,
                 "Notes": notes
             }
-            # Add new trade to local list and push entire list back to the cloud database
             trades_list.append(new_trade)
             user_ref.set({"trades": trades_list})
             st.success("Trade securely saved to the cloud! Refreshing dashboard...")
             st.rerun()
 
-        # --- DASHBOARD LOGIC ---
         if trades_list:
             df = pd.DataFrame(trades_list)
-            
-            # Calculate Equity Curve
             df['Equity'] = df['PnL'].cumsum()
-            
-            # Display Stats Metrics
             total_trades = len(df)
             total_pnl = df['PnL'].sum()
             win_rate = (len(df[df['PnL'] > 0]) / total_trades) * 100 if total_trades > 0 else 0
@@ -99,7 +88,6 @@ else:
             
             st.markdown("---")
             
-            # Visual Chart & Table
             fig = px.line(df, y='Equity', title="🚀 Your Cloud Equity Curve", markers=True)
             st.plotly_chart(fig, use_container_width=True)
             
