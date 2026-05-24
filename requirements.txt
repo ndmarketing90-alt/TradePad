@@ -1,4 +1,3 @@
 pandas
 plotly
-google-cloud-firestore
 st-firestore-connection
