@@ -19,13 +19,8 @@ else:
     
     # --- CONNECT TO DATABASE ---
     try:
-        raw_key = st.secrets["textkey"]["private_key"]
-        
-        # This converts the text shortcuts into real cloud line breaks securely
-        if "\\n" in raw_key:
-            formatted_key = raw_key.replace("\\n", "\n")
-        else:
-            formatted_key = raw_key.replace(r"\n", "\n")
+        # Read the key exactly as it is formatted in the secrets dashboard
+        formatted_key = st.secrets["textkey"]["private_key"]
 
         creds = {
             "type": st.secrets["textkey"]["type"],
@@ -40,11 +35,6 @@ else:
             "client_x509_cert_url": st.secrets["textkey"]["client_x509_cert_url"],
             "universe_domain": st.secrets["textkey"]["universe_domain"]
         }
-        db = firestore.Client.from_service_account_info(creds)
-        error_message = None
-    except Exception as e:
-        db = None
-        error_message = str(e)
         db = firestore.Client.from_service_account_info(creds)
         error_message = None
     except Exception as e:
