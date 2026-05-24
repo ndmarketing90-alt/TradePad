@@ -2,80 +2,91 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# Set up the page style and brand name
-st.set_page_config(page_title="TradePad | Private Journal", layout="wide")
-st.title("📝 TradePad")
-st.subheader("Your Private Trading Journal & Analytics Dashboard")
-st.write("Track your trading strategy and discover your statistical edge. Your data stays local to your session.")
+st.set_page_config(page_title="TradePad", layout="wide")
 
-# --- SESSION STATE: KEEP DATA PRIVATE PER USER ---
-if "my_trades" not in st.session_state:
-    st.session_state.my_trades = pd.DataFrame(
-        columns=["Date", "Asset / Pair", "Type", "Entry Price", "Exit Price", "Result ($)", "Notes"]
-    )
+st.title("🦅 TradePad - Shared Cloud Journal")
+st.write("Log your setups, track your equity, and save your data forever.")
 
-df = st.session_state.my_trades
+# --- USER LOGIN SECTION ---
+st.sidebar.header("👤 Trader Authentication")
+username = st.sidebar.text_input("Enter your Username:", "").strip().lower()
 
-# --- SIDEBAR: INPUT NEW TRADE ---
-st.sidebar.header("📝 Log a New Trade")
-with st.sidebar.form("trade_form", clear_on_submit=True):
-    date = st.date_input("Trade Date")
-
-    # ONE CLEAN DROPDOWN: Separated by exact Exness symbols
-    asset = st.selectbox("Asset / Pair", [
-        "US500 (S&P 500)",
-        "USTEC (Nasdaq 100)",
-        "US30 (Dow Jones)",
-        "DE30 (Dax 40)",
-        "XAUUSD (Gold)",
-        "USOIL (Crude Oil)",
-        "EURUSD",
-        "GBPUSD",
-        "USDJPY",
-        "GBPJPY",
-        "EURGBP",
-        "AUDUSD",
-        "USDCAD",
-        "BTCUSD (Bitcoin)",
-        "ETHUSD (Ethereum)"
-    ])
-
-    trade_type = st.selectbox("Type", ["BUY (Long)", "SELL (Short)"])
-    entry = st.number_input("Entry Price", min_value=0.0, format="%.5f")
-    exit_p = st.number_input("Exit Price", min_value=0.0, format="%.5f")
-    result = st.number_input("Profit/Loss (in USD $)", format="%.2f")
-    notes = st.text_area("Notes (e.g., 'Clean 15m ORB setup')")
-
-    submit = st.form_submit_button("Save to TradePad")
-
-if submit:
-    new_trade = pd.DataFrame([[date, asset, trade_type, entry, exit_p, result, notes]], columns=df.columns)
-    st.session_state.my_trades = pd.concat([df, new_trade], ignore_index=True)
-    st.sidebar.success("Trade saved to your TradePad!")
-    st.rerun()
-
-# --- MAIN DASHBOARD ---
-if not df.empty:
-    # Calculations
-    total_trades = len(df)
-    win_trades = len(df[df["Result ($)"] > 0])
-    win_rate = (win_trades / total_trades) * 100 if total_trades > 0 else 0
-    total_pnl = df["Result ($)"].sum()
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Trades", total_trades)
-    col2.metric("Win Rate", f"{win_rate:.1f}%")
-    col3.metric("Net Profit/Loss", f"${total_pnl:,.2f}")
-
-    # Interactive Performance Chart
-    st.subheader("📈 Equity Curve")
-    df["Cumulative PnL"] = df["Result ($)"].cumsum()
-    fig = px.line(df, x=df.index, y="Cumulative PnL", title="Account Growth ($)", markers=True)
-    fig.update_traces(line_color="#00FFCC")  # Sleek tech green look
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Display raw data table
-    st.subheader("📁 History Log")
-    st.dataframe(df, use_container_width=True)
+if not username:
+    st.warning("Please enter a username in the sidebar to view or log your trades.")
 else:
-    st.info("Your TradePad is empty. Use the sidebar to log your first trade for this session!")
+    st.sidebar.success(type=f"Logged in as: {username}")
+
+    # --- CONNECT TO DATABASE ---
+    # We use Streamlit's built-in cloud database connection
+    db = st.connection("firestore", type="firestore")
+
+    # Define where this user's trades are stored in the cloud
+    user_ref = db.collection("traders").document(username)
+
+    # Fetch existing trades for this user from the cloud database
+    user_doc = user_ref.get()
+    if user_doc.exists:
+        trades_list = user_doc.to_dict().get("trades", [])
+    else:
+        trades_list = []
+
+    # --- NEW TRADE INPUT FORM ---
+    st.subheader("📝 Log a New Setup")
+
+    with st.form("trade_form", clear_on_submit=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            asset = col1.selectbox("Asset Pair", ["USTEC (Nasdaq)", "US30 (Dow Jones)", "DE30 (DAX)", "XAUUSD (Gold)"])
+            direction = col1.selectbox("Direction", ["BUY", "SELL"])
+        with col2:
+            pips = col2.number_input("Pips Gained/Lost (+/-)", value=0.0, step=0.1)
+            pnl = col2.number_input("Profit/Loss ($)", value=0.0, step=1.0)
+        with col3:
+            session = col3.selectbox("Session", ["London Open", "NY PM Session", "Asians / Rest"])
+            notes = col3.text_input("Trade Notes / Setup Type", placeholder="e.g., Fair Value Gap / Liquidity Sweep")
+
+        submit = st.form_submit_button("Save Trade to Cloud")
+
+    # --- SAVE TO CLOUD ACTION ---
+    if submit:
+        new_trade = {
+            "Asset": asset,
+            "Direction": direction,
+            "Pips": pips,
+            "PnL": pnl,
+            "Session": session,
+            "Notes": notes
+        }
+        # Add new trade to local list and push entire list back to the cloud database
+        trades_list.append(new_trade)
+        user_ref.set({"trades": trades_list})
+        st.success("Trade securely saved to the cloud! Refreshing dashboard...")
+        st.rerun()
+
+    # --- DASHBOARD LOGIC ---
+    if trades_list:
+        df = pd.DataFrame(trades_list)
+
+        # Calculate Equity Curve
+        df['Equity'] = df['PnL'].cumsum()
+
+        # Display Stats Metrics
+        total_trades = len(df)
+        total_pnl = df['PnL'].sum()
+        win_rate = (len(df[df['PnL'] > 0]) / total_trades) * 100 if total_trades > 0 else 0
+
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Total Trades Logged", f"{total_trades}")
+        m2.metric("Net Profit / Loss", f"${total_pnl:,.2f}")
+        m3.metric("Win Rate", f"{win_rate:.1f}%")
+
+        st.markdown("---")
+
+        # Visual Chart & Table
+        fig = px.line(df, y='Equity', title="🚀 Your Cloud Equity Curve", markers=True)
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.subheader("📊 Your Trading Ledger")
+        st.dataframe(df[["Asset", "Direction", "Pips", "PnL", "Session", "Notes"]], use_container_width=True)
+    else:
+        st.info("No trades found in the cloud database for this username yet. Log your first setup above!")
