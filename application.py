@@ -18,10 +18,21 @@ else:
     st.sidebar.success(f"Logged in as: {username}")
     
     # --- CONNECT TO DATABASE ---
-    # Connect directly to Firestore using standard cloud credentials
     try:
-        credentials_dict = dict(st.secrets["textkey"])
-        db = firestore.Client.from_service_account_info(credentials_dict)
+        creds = {
+            "type": st.secrets["textkey"]["type"],
+            "project_id": st.secrets["textkey"]["project_id"],
+            "private_key_id": st.secrets["textkey"]["private_key_id"],
+            "private_key": st.secrets["textkey"]["private_key"].replace(r'\n', '\n'),
+            "client_email": st.secrets["textkey"]["client_email"],
+            "client_id": st.secrets["textkey"]["client_id"],
+            "auth_uri": st.secrets["textkey"]["auth_uri"],
+            "token_uri": st.secrets["textkey"]["token_uri"],
+            "auth_provider_x509_cert_url": st.secrets["textkey"]["auth_provider_x509_cert_url"],
+            "client_x509_cert_url": st.secrets["textkey"]["client_x509_cert_url"],
+            "universe_domain": st.secrets["textkey"]["universe_domain"]
+        }
+        db = firestore.Client.from_service_account_info(creds)
     except Exception as e:
         db = None
 
