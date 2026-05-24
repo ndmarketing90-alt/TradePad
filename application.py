@@ -23,7 +23,7 @@ else:
             "type": st.secrets["textkey"]["type"],
             "project_id": st.secrets["textkey"]["project_id"],
             "private_key_id": st.secrets["textkey"]["private_key_id"],
-            "private_key": st.secrets["textkey"]["private_key"].replace(r'\n', '\n'),
+            "private_key": st.secrets["textkey"]["private_key"],
             "client_email": st.secrets["textkey"]["client_email"],
             "client_id": st.secrets["textkey"]["client_id"],
             "auth_uri": st.secrets["textkey"]["auth_uri"],
