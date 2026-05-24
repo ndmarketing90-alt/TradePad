@@ -19,7 +19,7 @@ else:
     # --- CONNECT TO DATABASE ---
     # We use Streamlit's built-in cloud database connection
     db = st.connection("st_firestore", type="st_firestore")
-
+    
     # Define where this user's trades are stored in the cloud
     user_ref = db.collection("traders").document(username)
 
