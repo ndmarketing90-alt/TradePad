@@ -14,7 +14,7 @@ username = st.sidebar.text_input("Enter your Username:", "").strip().lower()
 if not username:
     st.warning("Please enter a username in the sidebar to view or log your trades.")
 else:
-    st.sidebar.success(type=f"Logged in as: {username}")
+    st.sidebar.success(f"Logged in as: {username}")
 
     # --- CONNECT TO DATABASE ---
     # We use Streamlit's built-in cloud database connection
