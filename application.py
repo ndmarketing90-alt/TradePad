@@ -21,7 +21,7 @@ else:
     try:
         raw_key = st.secrets["private_key"]
         
-        # This replaces the literal text '\n' with real Python cryptographic line breaks
+        # This converts the text shortcuts into real cloud line breaks
         if "\\n" in raw_key:
             formatted_key = raw_key.replace("\\n", "\n")
         else:
@@ -41,10 +41,6 @@ else:
             "universe_domain": st.secrets["universe_domain"]
         }
         db = firestore.Client.from_service_account_info(creds)
-        error_message = None
-    except Exception as e:
-        db = None
-        error_message = str(e)
         error_message = None
     except Exception as e:
         db = None
